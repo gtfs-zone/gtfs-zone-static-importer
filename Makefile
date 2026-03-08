@@ -1,3 +1,4 @@
+SHELL := /usr/bin/env sh
 REGISTRY := git.kcfam.us/gtfs.zone/schedule-foamer
 
 COMMIT := $(shell git rev-parse --short HEAD)
