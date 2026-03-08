@@ -12,28 +12,28 @@ class LoadStatus(StrEnum):
     failed = "failed"
 
 
+class GtfsStaticFeed(SQLModel, table=True):
+    __tablename__ = "gtfs_static_feed"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    timezone: Optional[str] = None
+    status: str = Field(default=LoadStatus.pending)
+    error_message: Optional[str] = None
+    last_loaded_at: Optional[datetime] = None
+
+
 class Feed(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     feed_name: str
     static_feed_url: str
     owner_id: int
-
-
-class FeedLoadStatus(SQLModel, table=True):
-    __tablename__ = "feed_load_status"
-    feed_id: int = Field(foreign_key="feed.id", primary_key=True)
-    last_loaded_at: Optional[datetime] = None
-    status: str = Field(default=LoadStatus.pending)
-    error_message: Optional[str] = None
-    stop_count: int = 0
-    route_count: int = 0
-    trip_count: int = 0
+    gtfs_static_feed_id: Optional[int] = None
 
 
 class GtfsStop(SQLModel, table=True):
     __tablename__ = "gtfs_stop"
     id: Optional[int] = Field(default=None, primary_key=True)
-    feed_id: int = Field(foreign_key="feed.id")
+    gtfs_static_feed_id: int = Field(foreign_key="gtfs_static_feed.id")
     stop_id: str
     stop_name: str
     stop_lat: float
@@ -45,7 +45,7 @@ class GtfsStop(SQLModel, table=True):
 class GtfsRoute(SQLModel, table=True):
     __tablename__ = "gtfs_route"
     id: Optional[int] = Field(default=None, primary_key=True)
-    feed_id: int = Field(foreign_key="feed.id")
+    gtfs_static_feed_id: int = Field(foreign_key="gtfs_static_feed.id")
     route_id: str
     agency_id: Optional[str] = None
     route_short_name: str
@@ -56,7 +56,7 @@ class GtfsRoute(SQLModel, table=True):
 class GtfsTrip(SQLModel, table=True):
     __tablename__ = "gtfs_trip"
     id: Optional[int] = Field(default=None, primary_key=True)
-    feed_id: int = Field(foreign_key="feed.id")
+    gtfs_static_feed_id: int = Field(foreign_key="gtfs_static_feed.id")
     trip_id: str
     route_id: str
     service_id: str
@@ -67,7 +67,7 @@ class GtfsTrip(SQLModel, table=True):
 class GtfsStopTime(SQLModel, table=True):
     __tablename__ = "gtfs_stop_time"
     id: Optional[int] = Field(default=None, primary_key=True)
-    feed_id: int = Field(foreign_key="feed.id")
+    gtfs_static_feed_id: int = Field(foreign_key="gtfs_static_feed.id")
     trip_id: str
     stop_id: str
     arrival_time: str  # NEVER NULL — filtered during parse; TEXT because GTFS allows 25:30:00

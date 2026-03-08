@@ -26,7 +26,15 @@ def _read_csv(zf: zipfile.ZipFile, name: str) -> list[dict]:
         return []
 
 
-def _parse_stops(rows, feed_id) -> list[dict]:
+def _parse_agency_timezone(rows: list[dict]) -> str | None:
+    for r in rows:
+        tz = r.get("agency_timezone", "").strip()
+        if tz:
+            return tz
+    return None
+
+
+def _parse_stops(rows, gtfs_static_feed_id) -> list[dict]:
     out = []
     for r in rows:
         lat, lon = r.get("stop_lat", "").strip(), r.get("stop_lon", "").strip()
@@ -34,7 +42,7 @@ def _parse_stops(rows, feed_id) -> list[dict]:
             continue
         out.append(
             {
-                "feed_id": feed_id,
+                "gtfs_static_feed_id": gtfs_static_feed_id,
                 "stop_id": r["stop_id"].strip(),
                 "stop_name": r.get("stop_name", "").strip(),
                 "stop_lat": float(lat),
@@ -46,10 +54,10 @@ def _parse_stops(rows, feed_id) -> list[dict]:
     return out
 
 
-def _parse_routes(rows, feed_id) -> list[dict]:
+def _parse_routes(rows, gtfs_static_feed_id) -> list[dict]:
     return [
         {
-            "feed_id": feed_id,
+            "gtfs_static_feed_id": gtfs_static_feed_id,
             "route_id": r["route_id"].strip(),
             "agency_id": r.get("agency_id", "").strip() or None,
             "route_short_name": r.get("route_short_name", "").strip(),
@@ -60,10 +68,10 @@ def _parse_routes(rows, feed_id) -> list[dict]:
     ]
 
 
-def _parse_trips(rows, feed_id) -> list[dict]:
+def _parse_trips(rows, gtfs_static_feed_id) -> list[dict]:
     return [
         {
-            "feed_id": feed_id,
+            "gtfs_static_feed_id": gtfs_static_feed_id,
             "trip_id": r["trip_id"].strip(),
             "route_id": r["route_id"].strip(),
             "service_id": r["service_id"].strip(),
@@ -76,7 +84,7 @@ def _parse_trips(rows, feed_id) -> list[dict]:
     ]
 
 
-def _parse_stop_times(rows, feed_id) -> list[dict]:
+def _parse_stop_times(rows, gtfs_static_feed_id) -> list[dict]:
     out = []
     for r in rows:
         arr = r.get("arrival_time", "").strip()
@@ -85,7 +93,7 @@ def _parse_stop_times(rows, feed_id) -> list[dict]:
             continue
         out.append(
             {
-                "feed_id": feed_id,
+                "gtfs_static_feed_id": gtfs_static_feed_id,
                 "trip_id": r["trip_id"].strip(),
                 "stop_id": r["stop_id"].strip(),
                 "arrival_time": arr,
@@ -104,22 +112,23 @@ def _bulk_insert(session: Session, model, rows: list[dict]) -> None:
         session.execute(stmt, rows[i : i + _CHUNK])
 
 
-def load_feed_data(session: Session, feed_id: int, zip_bytes: bytes) -> dict[str, int]:
+def load_feed_data(session: Session, gtfs_static_feed_id: int, zip_bytes: bytes) -> dict:
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-        stops = _parse_stops(_read_csv(zf, "stops.txt"), feed_id)
-        routes = _parse_routes(_read_csv(zf, "routes.txt"), feed_id)
-        trips = _parse_trips(_read_csv(zf, "trips.txt"), feed_id)
-        stoptimes = _parse_stop_times(_read_csv(zf, "stop_times.txt"), feed_id)
+        timezone = _parse_agency_timezone(_read_csv(zf, "agency.txt"))
+        stops = _parse_stops(_read_csv(zf, "stops.txt"), gtfs_static_feed_id)
+        routes = _parse_routes(_read_csv(zf, "routes.txt"), gtfs_static_feed_id)
+        trips = _parse_trips(_read_csv(zf, "trips.txt"), gtfs_static_feed_id)
+        stoptimes = _parse_stop_times(_read_csv(zf, "stop_times.txt"), gtfs_static_feed_id)
 
     # Delete child tables first (FK order)
-    session.execute(delete(GtfsStopTime).where(GtfsStopTime.feed_id == feed_id))
-    session.execute(delete(GtfsTrip).where(GtfsTrip.feed_id == feed_id))
-    session.execute(delete(GtfsRoute).where(GtfsRoute.feed_id == feed_id))
-    session.execute(delete(GtfsStop).where(GtfsStop.feed_id == feed_id))
+    session.execute(delete(GtfsStopTime).where(GtfsStopTime.gtfs_static_feed_id == gtfs_static_feed_id))
+    session.execute(delete(GtfsTrip).where(GtfsTrip.gtfs_static_feed_id == gtfs_static_feed_id))
+    session.execute(delete(GtfsRoute).where(GtfsRoute.gtfs_static_feed_id == gtfs_static_feed_id))
+    session.execute(delete(GtfsStop).where(GtfsStop.gtfs_static_feed_id == gtfs_static_feed_id))
 
     _bulk_insert(session, GtfsStop, stops)
     _bulk_insert(session, GtfsRoute, routes)
     _bulk_insert(session, GtfsTrip, trips)
     _bulk_insert(session, GtfsStopTime, stoptimes)
 
-    return {"stops": len(stops), "routes": len(routes), "trips": len(trips)}
+    return {"stops": len(stops), "routes": len(routes), "trips": len(trips), "timezone": timezone}
