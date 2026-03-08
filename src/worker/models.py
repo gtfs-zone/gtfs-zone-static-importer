@@ -20,6 +20,8 @@ class GtfsStaticFeed(SQLModel, table=True):
     status: str = Field(default=LoadStatus.pending)
     error_message: Optional[str] = None
     last_loaded_at: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    next_retry_at: Optional[datetime] = None
 
 
 class Feed(SQLModel, table=True):
