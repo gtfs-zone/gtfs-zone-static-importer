@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     celery_result_backend: str = "redis://localhost:6379/4"
     httpx_timeout: float = 60.0
     feed_refresh_interval_minutes: int = 1440  # 24 hours
+    celery_worker_concurrency: int = 2
+    celery_max_tasks_per_child: int = 10
 
 
 settings = Settings()
