@@ -1,7 +1,7 @@
 # schedule-foamer
 
 Celery worker that downloads GTFS static feeds and writes parsed data to PostgreSQL tables
-owned by `redis-gtfs-rt-api`.
+owned by `cafe-car`.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ owned by `redis-gtfs-rt-api`.
 
 - Never store `GtfsStopTime` with null `arrival_time` or `departure_time` — filter rows during parse
 - `arrival_time` and `departure_time` are stored as TEXT (GTFS allows values like `25:30:00` for overnight trips)
-- Never run Alembic here — schema migrations live in `redis-gtfs-rt-api`
+- Never run Alembic here — schema migrations live in `cafe-car`
 - Use psycopg2 (sync) only — no asyncpg
 
 ## Package management

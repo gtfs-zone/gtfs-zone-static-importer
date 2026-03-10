@@ -1,7 +1,7 @@
 # schedule-foamer
 
 Celery worker that downloads GTFS static feeds, parses them, and writes to PostgreSQL tables
-managed by [redis-gtfs-rt-api](../redis-gtfs-rt-api).
+managed by [cafe-car](../cafe-car).
 
 ## Quick start
 
@@ -25,10 +25,10 @@ uv run ruff check --fix src/    # lint + autofix
 
 ## Docker
 
-Built and run as part of `redis-gtfs-rt-api`'s docker-compose:
+Built and run as part of `cafe-car`'s docker-compose:
 
 ```bash
-cd ../redis-gtfs-rt-api
+cd ../cafe-car
 docker compose up --build
 ```
 
