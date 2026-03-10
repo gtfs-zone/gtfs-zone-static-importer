@@ -3,7 +3,8 @@ import traceback
 from datetime import datetime, timedelta, timezone
 
 from celery.utils.log import get_task_logger
-from sqlalchemy import select
+from celery_singleton import Singleton
+from sqlalchemy import select, update
 
 from worker.celery_app import celery_app
 from worker.database import get_session
@@ -14,7 +15,14 @@ from worker.settings import settings
 logger = get_task_logger(__name__)
 
 
-@celery_app.task(bind=True, name="worker.tasks.load_feed", max_retries=3)
+@celery_app.task(
+    bind=True,
+    name="worker.tasks.load_feed",
+    base=Singleton,
+    max_retries=3,
+    raise_on_duplicate=False,
+    unique_on=["feed_id"],
+)
 def load_feed(self, feed_id: int) -> dict:
     logger.info("load_feed feed_id=%s", feed_id)
 
@@ -25,18 +33,33 @@ def load_feed(self, feed_id: int) -> dict:
             raise ValueError(f"Feed {feed_id} not found")
         url = feed.static_feed_url
         if feed.gtfs_static_feed_id:
-            gsf = session.get(GtfsStaticFeed, feed.gtfs_static_feed_id)
-            gsf.status = LoadStatus.running
-            gsf.error_message = None
+            result = session.execute(
+                update(GtfsStaticFeed)
+                .where(
+                    GtfsStaticFeed.id == feed.gtfs_static_feed_id,
+                    GtfsStaticFeed.status != LoadStatus.running,
+                )
+                .values(
+                    status=LoadStatus.running,
+                    started_at=datetime.now(timezone.utc),
+                    next_retry_at=None,
+                    error_message=None,
+                )
+                .returning(GtfsStaticFeed.id)
+            )
+            if result.fetchone() is None:
+                logger.info("load_feed feed_id=%s already running — skipping", feed_id)
+                return {"skipped": True}
+            gsf_id = feed.gtfs_static_feed_id
         else:
             gsf = GtfsStaticFeed(status=LoadStatus.running)
             session.add(gsf)
             session.flush()
             feed.gtfs_static_feed_id = gsf.id
-        gsf.started_at = datetime.now(timezone.utc)
-        gsf.next_retry_at = None
+            gsf.started_at = datetime.now(timezone.utc)
+            gsf.next_retry_at = None
+            gsf_id = gsf.id
         session.commit()
-        gsf_id = gsf.id
 
     # 2. Download zip (outside session)
     try:
