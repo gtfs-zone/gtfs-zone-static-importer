@@ -9,7 +9,7 @@ from sqlalchemy import select, update
 from worker.celery_app import celery_app
 from worker.database import get_session
 from worker.gtfs_loader import download_gtfs_zip, load_feed_data
-from worker.models import Feed, GtfsStaticFeed, LoadStatus
+from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
 from worker.settings import settings
 
 logger = get_task_logger(__name__)

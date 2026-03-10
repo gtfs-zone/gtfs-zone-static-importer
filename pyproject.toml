@@ -9,7 +9,11 @@ dependencies = [
     "sqlmodel>=0.0.21",
     "psycopg2-binary>=2.9",
     "pydantic-settings>=2.6",
+    "railroad-club",
 ]
+
+[tool.uv.sources]
+railroad-club = { git = "https://git.kcfam.us/gtfs.zone/railroad-club.git" }
 
 [build-system]
 requires = ["hatchling"]

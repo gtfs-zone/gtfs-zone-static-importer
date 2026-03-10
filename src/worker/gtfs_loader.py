@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy import delete, insert
 from sqlalchemy.orm import Session
 
-from worker.models import GtfsRoute, GtfsStop, GtfsStopTime, GtfsTrip
+from railroad_club.models import GtfsRoute, GtfsStop, GtfsStopTime, GtfsTrip
 
 _CHUNK = 1000
 
