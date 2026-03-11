@@ -63,7 +63,7 @@ def load_feed(self, feed_id: int) -> dict:
 
     # 2. Download zip (outside session)
     try:
-        zip_bytes = download_gtfs_zip(url, timeout=settings.httpx_timeout)
+        zip_bytes = download_gtfs_zip(url, timeout=settings.httpx_timeout, max_bytes=settings.max_gtfs_zip_bytes)
     except Exception as exc:
         with get_session() as session:
             gsf = session.get(GtfsStaticFeed, gsf_id)

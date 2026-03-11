@@ -11,11 +11,24 @@ from railroad_club.models import GtfsRoute, GtfsStop, GtfsStopTime, GtfsTrip
 _CHUNK = 1000
 
 
-def download_gtfs_zip(url: str, timeout: float) -> bytes:
-    with httpx.Client(timeout=timeout, follow_redirects=True) as client:
-        r = client.get(url)
-        r.raise_for_status()
-        return r.content
+def download_gtfs_zip(url: str, timeout: float, max_bytes: int) -> bytes:
+    with httpx.Client(timeout=timeout, follow_redirects=True) as client, client.stream("GET", url) as r:
+            r.raise_for_status()
+            length_str = r.headers.get("content-length")
+            if length_str is not None and int(length_str) > max_bytes:
+                raise ValueError(
+                    f"GTFS zip Content-Length {length_str} exceeds limit {max_bytes}"
+                )
+            chunks = []
+            received = 0
+            for chunk in r.iter_bytes():
+                received += len(chunk)
+                if received > max_bytes:
+                    raise ValueError(
+                        f"GTFS zip body exceeded limit {max_bytes} during download"
+                    )
+                chunks.append(chunk)
+            return b"".join(chunks)
 
 
 def _iter_csv(zf: zipfile.ZipFile, name: str):

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     feed_refresh_interval_minutes: int = 1440  # 24 hours
     celery_worker_concurrency: int = 2
     celery_max_tasks_per_child: int = 10
+    max_gtfs_zip_bytes: int = 31457280 # 30 MB
 
 
 settings = Settings()
