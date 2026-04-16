@@ -11,6 +11,10 @@ owned by `cafe-car`.
 - **Delete-then-insert** per feed_id in a single transaction (not upsert per row)
 - **SQLAlchemy Core bulk insert** for stop_times performance
 
+## Important Rules
+
+- Never add Co-Authored-By: Claude ... trailers to commit messages
+
 ## Key rules
 
 - Never store `GtfsStopTime` with null `arrival_time` or `departure_time` — filter rows during parse

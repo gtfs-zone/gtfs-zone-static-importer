@@ -1,0 +1,10 @@
+# Changes here will be overwritten by Copier; do not edit manually.
+_commit: 52586a4
+_src_path: /home/maxtkc/Documents/bare-chassis
+description: Celery worker that builds and publishes GTFS-RT schedule updates
+docker_base: bookworm
+entrypoint_module: worker.celery_app
+package_name: schedule_foamer
+project_name: Schedule Foamer
+project_slug: schedule-foamer
+project_type: worker

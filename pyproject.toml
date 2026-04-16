@@ -2,6 +2,7 @@
 name = "schedule-foamer"
 version = "0.1.0"
 requires-python = ">=3.13"
+description = "Celery worker that builds and publishes GTFS-RT schedule updates"
 dependencies = [
     "celery[redis]>=5.4",
     "celery-singleton>=0.3",
@@ -15,6 +16,13 @@ dependencies = [
 [tool.uv.sources]
 railroad-club = { git = "https://git.kcfam.us/gtfs.zone/railroad-club.git" }
 
+[dependency-groups]
+dev = [
+    "commitizen",
+    "pre-commit",
+    "ruff",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -22,15 +30,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/worker"]
 
-[dependency-groups]
-dev = ["commitizen", "pre-commit", "ruff"]
-
 [tool.ruff]
 target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN", "TCH", "RUF"]
+
 
 [tool.commitizen]
 name = "cz_conventional_commits"
