@@ -1,13 +1,13 @@
 from celery import Celery
 from celery.schedules import crontab
 
-from worker.settings import settings
+from schedule_foamer.settings import settings
 
 celery_app = Celery(
-    "worker",
+    "schedule_foamer",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["worker.tasks"],  # required for task discovery
+    include=["schedule_foamer.tasks"],  # required for task discovery
 )
 
 celery_app.conf.update(
@@ -26,7 +26,7 @@ celery_app.conf.update(
     worker_max_tasks_per_child=settings.celery_max_tasks_per_child,
     beat_schedule={
         "startup-ensure-scheduled": {
-            "task": "worker.tasks.ensure_all_feeds_scheduled",
+            "task": "schedule_foamer.tasks.ensure_all_feeds_scheduled",
             "schedule": crontab(),  # every minute, idempotent
         },
     },

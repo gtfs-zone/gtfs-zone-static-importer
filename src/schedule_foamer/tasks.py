@@ -6,18 +6,18 @@ from celery.utils.log import get_task_logger
 from celery_singleton import Singleton
 from sqlalchemy import select, update
 
-from worker.celery_app import celery_app
-from worker.database import get_session
-from worker.gtfs_loader import download_gtfs_zip, load_feed_data
+from schedule_foamer.celery_app import celery_app
+from schedule_foamer.database import get_session
+from schedule_foamer.gtfs_loader import download_gtfs_zip, load_feed_data
 from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
-from worker.settings import settings
+from schedule_foamer.settings import settings
 
 logger = get_task_logger(__name__)
 
 
 @celery_app.task(
     bind=True,
-    name="worker.tasks.load_feed",
+    name="schedule_foamer.tasks.load_feed",
     base=Singleton,
     max_retries=3,
     raise_on_duplicate=False,
@@ -95,7 +95,7 @@ def load_feed(self, feed_id: int) -> dict:
         raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30))
 
 
-@celery_app.task(name="worker.tasks.ensure_all_feeds_scheduled")
+@celery_app.task(name="schedule_foamer.tasks.ensure_all_feeds_scheduled")
 def ensure_all_feeds_scheduled() -> int:
     """Re-enqueue feeds with no gtfs_static_feed, failed status, or last loaded >24h ago."""
     due_before = datetime.now(timezone.utc) - timedelta(minutes=settings.feed_refresh_interval_minutes)

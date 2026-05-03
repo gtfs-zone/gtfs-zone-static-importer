@@ -41,12 +41,11 @@ uv run pre-commit install
 
 ```bash
 uv sync
-uv run celery -A worker.celery_app worker -l info
+uv run celery -A schedule_foamer.celery_app worker -l info
 # In a separate terminal for beat:
-uv run celery -A worker.celery_app beat -l info
+uv run celery -A schedule_foamer.celery_app beat -l info
 ```
 
 ## Module structure
 
-The package is `worker` (installed via hatchling from `src/worker`), matching
-`celery -A worker.celery_app` used in the sibling docker-compose.
+The package is `schedule_foamer` (installed via hatchling from `src/schedule_foamer`).

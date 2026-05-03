@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from worker.settings import settings
+from schedule_foamer.settings import settings
 
 _engine = None
 

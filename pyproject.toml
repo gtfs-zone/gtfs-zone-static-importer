@@ -28,7 +28,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/worker"]
+packages = ["src/schedule_foamer"]
 
 [tool.ruff]
 target-version = "py313"
