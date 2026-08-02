@@ -36,6 +36,6 @@ docker compose up --build
 
 | Task | Description |
 |------|-------------|
-| `worker.tasks.load_feed` | Download and parse a single GTFS feed by ID |
+| `schedule_foamer.tasks.load_feed` | Download and parse a single GTFS feed by ID |
 | `worker.tasks.refresh_all_feeds` | Enqueue `load_feed` for every feed (runs daily at 02:00 UTC) |
 | `worker.tasks.ensure_all_feeds_scheduled` | Re-enqueue feeds with no status or failed status (runs every minute) |
