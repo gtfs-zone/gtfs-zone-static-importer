@@ -48,7 +48,7 @@ def load_feed(self, feed_id: int) -> dict:
                 .returning(GtfsStaticFeed.id)
             )
             if result.fetchone() is None:
-                logger.info("load_feed feed_id=%s already running — skipping", feed_id)
+                logger.info("load_feed feed_id=%s already running, skipping", feed_id)
                 return {"skipped": True}
             gsf_id = feed.gtfs_static_feed_id
         else:

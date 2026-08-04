@@ -20,7 +20,7 @@ celery_app.conf.update(
     ONCE={
         "backend": "celery_singleton.backends.RedisBackend",
         "settings": {"url": settings.celery_broker_url},
-        "default_timeout": 60 * 60,  # 1 hour — longer than worst-case task duration
+        "default_timeout": 60 * 60,  # 1 hour, longer than worst-case task duration
     },
     worker_concurrency=settings.celery_worker_concurrency,
     worker_max_tasks_per_child=settings.celery_max_tasks_per_child,

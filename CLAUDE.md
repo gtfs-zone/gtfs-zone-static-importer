@@ -5,9 +5,9 @@ owned by `cafe-car`.
 
 ## Architecture
 
-- **Celery worker** with beat scheduler — no HTTP server
-- **Sync only** — psycopg2-binary, no asyncpg, no asyncio in tasks
-- **Session-per-task** via `get_session()` context manager — never share sessions across tasks
+- **Celery worker** with beat scheduler, no HTTP server
+- **Sync only** (psycopg2-binary, no asyncpg, no asyncio in tasks)
+- **Session-per-task** via `get_session()` context manager; never share sessions across tasks
 - **Delete-then-insert** per feed_id in a single transaction (not upsert per row)
 - **SQLAlchemy Core bulk insert** for stop_times performance
 
@@ -17,10 +17,10 @@ owned by `cafe-car`.
 
 ## Key rules
 
-- Never store `GtfsStopTime` with null `arrival_time` or `departure_time` — filter rows during parse
+- Never store `GtfsStopTime` with null `arrival_time` or `departure_time`; filter rows during parse
 - `arrival_time` and `departure_time` are stored as TEXT (GTFS allows values like `25:30:00` for overnight trips)
-- Never run Alembic here — schema migrations live in `cafe-car`
-- Use psycopg2 (sync) only — no asyncpg
+- Never run Alembic here; schema migrations live in `cafe-car`
+- Use psycopg2 (sync) only, no asyncpg
 
 ## Package management
 
