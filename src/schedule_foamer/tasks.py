@@ -8,6 +8,7 @@ from sqlalchemy import select, update
 
 from schedule_foamer.celery_app import celery_app
 from schedule_foamer.database import get_session
+from schedule_foamer.events import publish_load
 from schedule_foamer.gtfs_loader import download_gtfs_zip, load_feed_data
 from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
 from schedule_foamer.settings import settings
@@ -60,6 +61,9 @@ def load_feed(self, feed_id: int) -> dict:
             gsf.next_retry_at = None
             gsf_id = gsf.id
         session.commit()
+        # After the commit, and re-read rather than reported from the local
+        # variables: what is pushed has to be what a GET of the feed would say.
+        publish_load(feed_id, session.get(GtfsStaticFeed, gsf_id))
 
     # 2. Download zip (outside session)
     try:
@@ -71,6 +75,7 @@ def load_feed(self, feed_id: int) -> dict:
             gsf.error_message = f"Download failed: {exc}"
             gsf.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=24)
             session.commit()
+            publish_load(feed_id, gsf)
         raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30))
 
     # 3. Load data, update GtfsStaticFeed
@@ -82,6 +87,7 @@ def load_feed(self, feed_id: int) -> dict:
             gsf.status = LoadStatus.success
             gsf.last_loaded_at = datetime.now(timezone.utc)
             session.commit()
+            publish_load(feed_id, gsf)
         logger.info("load_feed feed_id=%s done: %s", feed_id, counts)
         return counts
     except Exception as exc:
@@ -92,6 +98,7 @@ def load_feed(self, feed_id: int) -> dict:
             gsf.last_loaded_at = datetime.now(timezone.utc)
             gsf.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=24)
             session.commit()
+            publish_load(feed_id, gsf)
         raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30))
 
 

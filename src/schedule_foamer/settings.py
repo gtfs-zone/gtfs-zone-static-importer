@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     database_url: str = ""
     celery_broker_url: str = "redis://localhost:6379/3"
     celery_result_backend: str = "redis://localhost:6379/4"
+    # Where load-status events are published. cafe-car subscribes on the same
+    # URL and forwards to yard-master; pub/sub ignores the db number, but the
+    # two are pointed at one db anyway rather than relying on that.
+    redis_url: str = "redis://localhost:6379/1"
     httpx_timeout: float = 60.0
     feed_refresh_interval_minutes: int = 1440  # 24 hours
     celery_worker_concurrency: int = 2
