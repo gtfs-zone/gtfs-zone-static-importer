@@ -20,7 +20,9 @@ railroad-club = { git = "https://git.kcfam.us/gtfs.zone/railroad-club.git" }
 [dependency-groups]
 dev = [
     "commitizen",
+    "moto[s3]>=5.0",
     "pre-commit",
+    "pytest>=8.0",
     "ruff",
 ]
 
@@ -45,3 +47,11 @@ tag_format = "v$version"
 version_provider = "uv"
 update_changelog_on_bump = true
 major_version_zero = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests take fixtures by name and return nothing worth annotating, and a CSV
+# row split across lines to fit the margin is harder to read than a long one.
+"tests/*" = ["ANN", "E501"]

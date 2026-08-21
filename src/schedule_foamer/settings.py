@@ -2,7 +2,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # extra="ignore": the .env also carries the S3_* keys railroad-club's
+    # ObjectStoreSettings reads, which are not this model's to declare.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     database_url: str = ""
     celery_broker_url: str = "redis://localhost:6379/3"
@@ -16,6 +20,10 @@ class Settings(BaseSettings):
     celery_worker_concurrency: int = 2
     celery_max_tasks_per_child: int = 10
     max_gtfs_zip_bytes: int = 31457280 # 30 MB
+    # The object store a hosted feed is read from is configured by
+    # railroad_club.object_store.ObjectStoreSettings, off the same .env: S3_ENDPOINT,
+    # S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY, S3_REGION. Not mirrored here, so
+    # cafe-car and this worker cannot be pointed at different buckets by accident.
 
 
 settings = Settings()

@@ -7,6 +7,7 @@ from sqlalchemy import delete, insert
 from sqlalchemy.orm import Session
 
 from railroad_club.models import GtfsRoute, GtfsStop, GtfsStopTime, GtfsTrip
+from railroad_club.object_store import get_object_store
 
 _CHUNK = 1000
 
@@ -29,6 +30,30 @@ def download_gtfs_zip(url: str, timeout: float, max_bytes: int) -> bytes:
                     )
                 chunks.append(chunk)
             return b"".join(chunks)
+
+
+def read_gtfs_object(key: str, max_bytes: int) -> bytes:
+    """Read a hosted feed's zip out of object storage.
+
+    The store client is built here rather than at import so a worker that
+    starts before the store is reachable does not die on the way up.
+
+    The cap is applied again even though the upload endpoint already enforced
+    it: an object can predate a lowered cap, and the parse after this holds the
+    whole thing in memory either way. `stat` first, so an oversized object is
+    refused without transferring it.
+    """
+    store = get_object_store()
+    size = store.stat(key).size_bytes
+    if size > max_bytes:
+        raise ValueError(f"GTFS object {key!r} is {size} bytes, over limit {max_bytes}")
+    body = store.get(key)
+    if len(body) > max_bytes:
+        raise ValueError(
+            f"GTFS object {key!r} body exceeded limit {max_bytes}"
+            f" after stat said {size}"
+        )
+    return body
 
 
 def _iter_csv(zf: zipfile.ZipFile, name: str):

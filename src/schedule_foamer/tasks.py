@@ -9,11 +9,37 @@ from sqlalchemy import select, update
 from schedule_foamer.celery_app import celery_app
 from schedule_foamer.database import get_session
 from schedule_foamer.events import publish_load
-from schedule_foamer.gtfs_loader import download_gtfs_zip, load_feed_data
+from schedule_foamer.gtfs_loader import (
+    download_gtfs_zip,
+    load_feed_data,
+    read_gtfs_object,
+)
 from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
+from railroad_club.models.gtfs_upload import FeedSourceKind
+from railroad_club.object_store import ObjectNotFound
 from schedule_foamer.settings import settings
 
 logger = get_task_logger(__name__)
+
+
+def _fail_load(
+    feed_id: int, gsf_id: int, message: str, *, permanent: bool = False
+) -> None:
+    """Record a failed load and push it, before the task raises.
+
+    ``permanent`` only says the Celery retry is pointless; the row still gets
+    the ordinary 24h ``next_retry_at`` so the beat sweep picks it up once a day
+    rather than on every pass.
+    """
+    with get_session() as session:
+        gsf = session.get(GtfsStaticFeed, gsf_id)
+        gsf.status = LoadStatus.failed
+        gsf.error_message = message
+        gsf.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        session.commit()
+        publish_load(feed_id, gsf)
+    if permanent:
+        logger.warning("load_feed feed_id=%s permanent failure: %s", feed_id, message)
 
 
 @celery_app.task(
@@ -32,7 +58,11 @@ def load_feed(self, feed_id: int) -> dict:
         feed = session.get(Feed, feed_id)
         if feed is None:
             raise ValueError(f"Feed {feed_id} not found")
+        # Read the source while the feed is still attached. Steps 2 and 3 run
+        # outside the session, so what they need has to come out as values.
+        hosted = feed.is_hosted
         url = feed.static_feed_url
+        object_key = feed.current_upload.object_key if feed.current_upload else None
         if feed.gtfs_static_feed_id:
             result = session.execute(
                 update(GtfsStaticFeed)
@@ -65,17 +95,30 @@ def load_feed(self, feed_id: int) -> dict:
         # variables: what is pushed has to be what a GET of the feed would say.
         publish_load(feed_id, session.get(GtfsStaticFeed, gsf_id))
 
-    # 2. Download zip (outside session)
+    # 2. Get the zip bytes (outside session). Hosted feeds read the object
+    # schedule-foamer's uploader wrote; url feeds download as they always have.
+    if hosted and object_key is None:
+        _fail_load(
+            feed_id, gsf_id, "Hosted feed has no uploaded schedule", permanent=True
+        )
+        raise ValueError(f"Feed {feed_id} is hosted with no current upload")
+
     try:
-        zip_bytes = download_gtfs_zip(url, timeout=settings.httpx_timeout, max_bytes=settings.max_gtfs_zip_bytes)
+        if hosted:
+            zip_bytes = read_gtfs_object(
+                object_key, max_bytes=settings.max_gtfs_zip_bytes
+            )
+        else:
+            zip_bytes = download_gtfs_zip(url, timeout=settings.httpx_timeout, max_bytes=settings.max_gtfs_zip_bytes)
+    except ObjectNotFound as exc:
+        # The row points at a key the store does not have. Retrying reads the
+        # same missing key, so this waits for somebody to upload again.
+        _fail_load(
+            feed_id, gsf_id, f"Stored schedule is missing: {exc}", permanent=True
+        )
+        raise
     except Exception as exc:
-        with get_session() as session:
-            gsf = session.get(GtfsStaticFeed, gsf_id)
-            gsf.status = LoadStatus.failed
-            gsf.error_message = f"Download failed: {exc}"
-            gsf.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=24)
-            session.commit()
-            publish_load(feed_id, gsf)
+        _fail_load(feed_id, gsf_id, f"Download failed: {exc}")
         raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30))
 
     # 3. Load data, update GtfsStaticFeed
@@ -104,7 +147,14 @@ def load_feed(self, feed_id: int) -> dict:
 
 @celery_app.task(name="schedule_foamer.tasks.ensure_all_feeds_scheduled")
 def ensure_all_feeds_scheduled() -> int:
-    """Re-enqueue feeds with no gtfs_static_feed, failed status, or last loaded >24h ago."""
+    """Re-enqueue feeds with no gtfs_static_feed, failed status, or last loaded >24h ago.
+
+    The timed refresh is for url feeds alone. A hosted feed's zip only changes
+    when somebody uploads one, and that upload enqueues the load itself, so
+    re-reading the same object every 24h would be work with no possible result.
+    A hosted feed that has never loaded, failed, or is stuck still comes
+    through: those are repairs, not refreshes.
+    """
     due_before = datetime.now(timezone.utc) - timedelta(minutes=settings.feed_refresh_interval_minutes)
     stuck_threshold = datetime.now(timezone.utc) - timedelta(minutes=5)
     with get_session() as session:
@@ -127,6 +177,7 @@ def ensure_all_feeds_scheduled() -> int:
                 | (
                     (GtfsStaticFeed.status == LoadStatus.success)
                     & (GtfsStaticFeed.last_loaded_at < due_before)
+                    & (Feed.source_kind != FeedSourceKind.hosted)
                 )
             )
         ).all()
