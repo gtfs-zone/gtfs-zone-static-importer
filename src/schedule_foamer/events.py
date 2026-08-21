@@ -15,8 +15,8 @@ opens its own rather than inheriting a socket from the parent.
 
 from __future__ import annotations
 
-import contextlib
 import json
+import logging
 from typing import TYPE_CHECKING
 
 from railroad_club.feed_events import feed_channel, load_event
@@ -26,6 +26,8 @@ from schedule_foamer.settings import settings
 if TYPE_CHECKING:
     from railroad_club.models import GtfsStaticFeed
     from redis import Redis
+
+logger = logging.getLogger(__name__)
 
 _client = None
 
@@ -40,6 +42,13 @@ def _redis() -> Redis:
 
 
 def publish_load(feed_id: int, static: GtfsStaticFeed | None) -> None:
-    """Push one feed's load status. Never raises."""
-    with contextlib.suppress(Exception):
+    """Push one feed's load status. Never raises, but says so when it fails."""
+    try:
         _redis().publish(feed_channel(feed_id), json.dumps(load_event(static)))
+    except Exception:
+        logger.warning(
+            "load status for feed %s not published to %s",
+            feed_id,
+            settings.redis_url,
+            exc_info=True,
+        )
