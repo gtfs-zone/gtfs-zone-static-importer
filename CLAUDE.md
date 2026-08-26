@@ -11,6 +11,15 @@ owned by `cafe-car`.
 - **Delete-then-insert** per feed_id in a single transaction (not upsert per row)
 - **SQLAlchemy Core bulk insert** for stop_times performance
 
+## The two source kinds
+
+A `Feed`'s `source_kind` (`railroad_club.models.gtfs_upload.FeedSourceKind`)
+is `hosted` or `url`. `tasks.py` branches on `feed.is_hosted`: a hosted feed's
+bytes come from `read_gtfs_object` against object storage (Garage), the zip
+someone uploaded through cafe-car; a `url` feed is downloaded fresh with
+`download_gtfs_zip` on every refresh, as it always has been. Hosted feeds are
+never re-downloaded from `Feed.static_feed_url`.
+
 ## Important Rules
 
 - Never add Co-Authored-By: Claude ... trailers to commit messages
