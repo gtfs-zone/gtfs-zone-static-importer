@@ -89,12 +89,24 @@ def store(monkeypatch):
 def make_gtfs_zip(*, route_id: str = "R1") -> bytes:
     """The smallest zip `load_feed_data` reads something out of."""
     files = {
-        "agency.txt": "agency_id,agency_name,agency_timezone\nA,Agency,America/New_York\n",
+        "agency.txt": (
+            "agency_id,agency_name,agency_timezone\nA,Agency,America/New_York\n"
+        ),
         "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,Stop One,40.0,-74.0\n",
-        "routes.txt": f"route_id,agency_id,route_short_name,route_long_name,route_type\n{route_id},A,1,One,3\n",
+        "routes.txt": (
+            "route_id,agency_id,route_short_name,route_long_name,route_type\n"
+            f"{route_id},A,1,One,3\n"
+        ),
         "trips.txt": f"route_id,service_id,trip_id,direction_id\n{route_id},SVC,T1,0\n",
-        "stop_times.txt": "trip_id,arrival_time,departure_time,stop_id,stop_sequence\nT1,08:00:00,08:00:00,S1,1\n",
-        "calendar.txt": "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\nSVC,1,1,1,1,1,1,1,20250101,20261231\n",
+        "stop_times.txt": (
+            "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+            "T1,08:00:00,08:00:00,S1,1\n"
+        ),
+        "calendar.txt": (
+            "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+            "start_date,end_date\n"
+            "SVC,1,1,1,1,1,1,1,20250101,20261231\n"
+        ),
     }
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zf:

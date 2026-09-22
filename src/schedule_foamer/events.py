@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from railroad_club.models import GtfsStaticFeed
     from redis import Redis
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 _client = None
 
@@ -46,7 +46,7 @@ def publish_load(feed_id: int, static: GtfsStaticFeed | None) -> None:
     try:
         _redis().publish(feed_channel(feed_id), json.dumps(load_event(static)))
     except Exception:
-        logger.warning(
+        log.warning(
             "load status for feed %s not published to %s",
             feed_id,
             settings.redis_url,

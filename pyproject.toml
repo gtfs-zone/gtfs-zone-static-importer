@@ -38,8 +38,11 @@ target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "ANN", "TCH", "RUF"]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN", "TC", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Tests take fixtures by name and return nothing worth annotating.
+"tests/**" = ["ANN"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -50,8 +53,3 @@ major_version_zero = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[tool.ruff.lint.per-file-ignores]
-# Tests take fixtures by name and return nothing worth annotating, and a CSV
-# row split across lines to fit the margin is harder to read than a long one.
-"tests/*" = ["ANN", "E501"]

@@ -30,6 +30,7 @@ never re-downloaded from `Feed.static_feed_url`.
 - `arrival_time` and `departure_time` are stored as TEXT (GTFS allows values like `25:30:00` for overnight trips)
 - Never run Alembic here; schema migrations live in `cafe-car`
 - Use psycopg2 (sync) only, no asyncpg
+- Module loggers are named `log`, never `logger`: `log = logging.getLogger(__name__)`
 
 ## Package management
 

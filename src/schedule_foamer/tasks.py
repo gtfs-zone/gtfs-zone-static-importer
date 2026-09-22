@@ -1,9 +1,13 @@
 import random
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
+from celery import Task
 from celery.utils.log import get_task_logger
 from celery_singleton import Singleton
+from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
+from railroad_club.models.gtfs_upload import FeedSourceKind
+from railroad_club.object_store import ObjectNotFound
 from sqlalchemy import select, update
 
 from schedule_foamer.celery_app import celery_app
@@ -14,12 +18,9 @@ from schedule_foamer.gtfs_loader import (
     load_feed_data,
     read_gtfs_object,
 )
-from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
-from railroad_club.models.gtfs_upload import FeedSourceKind
-from railroad_club.object_store import ObjectNotFound
 from schedule_foamer.settings import settings
 
-logger = get_task_logger(__name__)
+log = get_task_logger(__name__)
 
 
 def _fail_load(
@@ -35,11 +36,11 @@ def _fail_load(
         gsf = session.get(GtfsStaticFeed, gsf_id)
         gsf.status = LoadStatus.failed
         gsf.error_message = message
-        gsf.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        gsf.next_retry_at = datetime.now(UTC) + timedelta(hours=24)
         session.commit()
         publish_load(feed_id, gsf)
     if permanent:
-        logger.warning("load_feed feed_id=%s permanent failure: %s", feed_id, message)
+        log.warning("load_feed feed_id=%s permanent failure: %s", feed_id, message)
 
 
 @celery_app.task(
@@ -50,8 +51,8 @@ def _fail_load(
     raise_on_duplicate=False,
     unique_on=["feed_id"],
 )
-def load_feed(self, feed_id: int) -> dict:
-    logger.info("load_feed feed_id=%s", feed_id)
+def load_feed(self: Task, feed_id: int) -> dict:
+    log.info("load_feed feed_id=%s", feed_id)
 
     # 1. Get or create GtfsStaticFeed, set status=running
     with get_session() as session:
@@ -72,14 +73,14 @@ def load_feed(self, feed_id: int) -> dict:
                 )
                 .values(
                     status=LoadStatus.running,
-                    started_at=datetime.now(timezone.utc),
+                    started_at=datetime.now(UTC),
                     next_retry_at=None,
                     error_message=None,
                 )
                 .returning(GtfsStaticFeed.id)
             )
             if result.fetchone() is None:
-                logger.info("load_feed feed_id=%s already running, skipping", feed_id)
+                log.info("load_feed feed_id=%s already running, skipping", feed_id)
                 return {"skipped": True}
             gsf_id = feed.gtfs_static_feed_id
         else:
@@ -87,7 +88,7 @@ def load_feed(self, feed_id: int) -> dict:
             session.add(gsf)
             session.flush()
             feed.gtfs_static_feed_id = gsf.id
-            gsf.started_at = datetime.now(timezone.utc)
+            gsf.started_at = datetime.now(UTC)
             gsf.next_retry_at = None
             gsf_id = gsf.id
         session.commit()
@@ -109,7 +110,11 @@ def load_feed(self, feed_id: int) -> dict:
                 object_key, max_bytes=settings.max_gtfs_zip_bytes
             )
         else:
-            zip_bytes = download_gtfs_zip(url, timeout=settings.httpx_timeout, max_bytes=settings.max_gtfs_zip_bytes)
+            zip_bytes = download_gtfs_zip(
+                url,
+                timeout=settings.httpx_timeout,
+                max_bytes=settings.max_gtfs_zip_bytes,
+            )
     except ObjectNotFound as exc:
         # The row points at a key the store does not have. Retrying reads the
         # same missing key, so this waits for somebody to upload again.
@@ -119,7 +124,7 @@ def load_feed(self, feed_id: int) -> dict:
         raise
     except Exception as exc:
         _fail_load(feed_id, gsf_id, f"Download failed: {exc}")
-        raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30))
+        raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30)) from exc
 
     # 3. Load data, update GtfsStaticFeed
     try:
@@ -128,26 +133,26 @@ def load_feed(self, feed_id: int) -> dict:
             gsf = session.get(GtfsStaticFeed, gsf_id)
             gsf.timezone = counts["timezone"]
             gsf.status = LoadStatus.success
-            gsf.last_loaded_at = datetime.now(timezone.utc)
+            gsf.last_loaded_at = datetime.now(UTC)
             session.commit()
             publish_load(feed_id, gsf)
-        logger.info("load_feed feed_id=%s done: %s", feed_id, counts)
+        log.info("load_feed feed_id=%s done: %s", feed_id, counts)
         return counts
     except Exception as exc:
         with get_session() as session:
             gsf = session.get(GtfsStaticFeed, gsf_id)
             gsf.status = LoadStatus.failed
             gsf.error_message = traceback.format_exc()[:2000]
-            gsf.last_loaded_at = datetime.now(timezone.utc)
-            gsf.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=24)
+            gsf.last_loaded_at = datetime.now(UTC)
+            gsf.next_retry_at = datetime.now(UTC) + timedelta(hours=24)
             session.commit()
             publish_load(feed_id, gsf)
-        raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30))
+        raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30)) from exc
 
 
 @celery_app.task(name="schedule_foamer.tasks.ensure_all_feeds_scheduled")
 def ensure_all_feeds_scheduled() -> int:
-    """Re-enqueue feeds with no gtfs_static_feed, failed status, or last loaded >24h ago.
+    """Re-enqueue feeds unloaded, failed, or last loaded over 24h ago.
 
     The timed refresh is for url feeds alone. A hosted feed's zip only changes
     when somebody uploads one, and that upload enqueues the load itself, so
@@ -155,8 +160,10 @@ def ensure_all_feeds_scheduled() -> int:
     A hosted feed that has never loaded, failed, or is stuck still comes
     through: those are repairs, not refreshes.
     """
-    due_before = datetime.now(timezone.utc) - timedelta(minutes=settings.feed_refresh_interval_minutes)
-    stuck_threshold = datetime.now(timezone.utc) - timedelta(minutes=5)
+    due_before = datetime.now(UTC) - timedelta(
+        minutes=settings.feed_refresh_interval_minutes
+    )
+    stuck_threshold = datetime.now(UTC) - timedelta(minutes=5)
     with get_session() as session:
         rows = session.execute(
             select(Feed.id, GtfsStaticFeed.status)
@@ -167,7 +174,7 @@ def ensure_all_feeds_scheduled() -> int:
                     (GtfsStaticFeed.status == LoadStatus.failed)
                     & (
                         GtfsStaticFeed.next_retry_at.is_(None)
-                        | (GtfsStaticFeed.next_retry_at <= datetime.now(timezone.utc))
+                        | (GtfsStaticFeed.next_retry_at <= datetime.now(UTC))
                     )
                 )
                 | (

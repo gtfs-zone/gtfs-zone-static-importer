@@ -1,14 +1,15 @@
+from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
 from schedule_foamer.settings import settings
 
-_engine = None
+_engine: Engine | None = None
 
 
-def _get_engine():
+def _get_engine() -> Engine:
     global _engine
     if _engine is None:
         _engine = create_engine(
@@ -21,6 +22,6 @@ def _get_engine():
 
 
 @contextmanager
-def get_session():
+def get_session() -> Iterator[Session]:
     with Session(_get_engine()) as session:
         yield session
