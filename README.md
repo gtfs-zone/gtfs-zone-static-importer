@@ -1,7 +1,7 @@
 # schedule-foamer
 
 Celery worker that downloads GTFS static feeds, parses them, and writes to PostgreSQL tables
-managed by [cafe-car](../cafe-car).
+defined in [railroad-club](https://github.com/gtfs-zone/railroad-club).
 
 ## Quick start
 
@@ -10,7 +10,8 @@ cp .env.example .env
 # Edit .env with your DATABASE_URL and Redis URLs
 uv sync
 uv run pre-commit install   # install git hooks (required once per clone)
-uv run celery -A worker.celery_app worker -l info
+uv run celery -A schedule_foamer.celery_app worker -l info
+uv run celery -A schedule_foamer.celery_app beat -l info   # periodic scheduling, separate process
 ```
 
 ## Development commands
@@ -25,10 +26,10 @@ uv run ruff check --fix src/    # lint + autofix
 
 ## Docker
 
-Built and run as part of `cafe-car`'s docker-compose:
+Built and run as part of [music-student](https://github.com/gtfs-zone/music-student)'s docker-compose:
 
 ```bash
-cd ../cafe-car
+cd ../music-student
 docker compose up --build
 ```
 
@@ -37,5 +38,4 @@ docker compose up --build
 | Task | Description |
 |------|-------------|
 | `schedule_foamer.tasks.load_feed` | Download and parse a single GTFS feed by ID |
-| `worker.tasks.refresh_all_feeds` | Enqueue `load_feed` for every feed (runs daily at 02:00 UTC) |
-| `worker.tasks.ensure_all_feeds_scheduled` | Re-enqueue feeds with no status or failed status (runs every minute) |
+| `schedule_foamer.tasks.ensure_all_feeds_scheduled` | Enqueue `load_feed` for feeds never loaded, failed, stuck, or (url feeds only) last loaded over 24h ago (runs every minute) |
