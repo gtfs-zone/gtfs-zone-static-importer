@@ -513,7 +513,7 @@ dependencies = [
 
 [[package]]
 name = "gtfs-zone-static-importer"
-version = "0.2.0"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
     { name = "celery", extra = ["redis"] },
