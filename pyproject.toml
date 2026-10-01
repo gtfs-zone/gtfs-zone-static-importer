@@ -8,11 +8,11 @@ dependencies = [
     "celery[redis]>=5.4",
     "celery-singleton>=0.3",
     "httpx>=0.27",
-    "sqlmodel>=0.0.21",
     "psycopg2-binary>=2.9",
     "pydantic-settings>=2.6",
     "redis>=5",
     "gtfs-zone-db-models",
+    "sqlalchemy>=2",
 ]
 
 [tool.uv.sources]
@@ -21,9 +21,12 @@ gtfs-zone-db-models = { git = "https://github.com/gtfs-zone/gtfs-zone-db-models.
 [dependency-groups]
 dev = [
     "commitizen",
+    "deptry>=0.25.1",
     "moto[s3]>=5.0",
     "pytest>=8.0",
     "ruff",
+    "sqlmodel>=0.0.21",
+    "vulture>=2.16",
 ]
 
 [build-system]
@@ -43,6 +46,17 @@ select = ["E", "F", "I", "UP", "B", "SIM", "ANN", "TC", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 # Tests take fixtures by name and return nothing worth annotating.
 "tests/**" = ["ANN"]
+
+[tool.vulture]
+paths = ["src"]
+# Used only through a framework: routes, validators, tasks, ORM fields
+ignore_decorators = ["@app.*", "@router.*", "@field_validator", "@model_validator", "@celery_app.task"]
+ignore_names = ["cls", "model_config", "error_message"]
+
+[tool.deptry]
+per_rule_ignores.DEP002 = [
+    "psycopg2-binary",  # SQLAlchemy driver, loaded from the database URL
+]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
