@@ -1,8 +1,8 @@
 # AGENTS.md
 
 Celery worker (with beat, no HTTP server) that downloads GTFS static feeds and
-writes them to the PostgreSQL tables defined in gtfs-zone-db-models. Pushing to
-`main` publishes the image.
+writes them to the PostgreSQL tables defined in gtfs-zone-db-models. A `v*` tag
+publishes the image.
 
 ## Architecture
 
