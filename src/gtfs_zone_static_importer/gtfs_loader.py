@@ -19,22 +19,22 @@ def download_gtfs_zip(url: str, timeout: float, max_bytes: int) -> bytes:
         httpx.Client(timeout=timeout, follow_redirects=True) as client,
         client.stream("GET", url) as r,
     ):
-            r.raise_for_status()
-            length_str = r.headers.get("content-length")
-            if length_str is not None and int(length_str) > max_bytes:
+        r.raise_for_status()
+        length_str = r.headers.get("content-length")
+        if length_str is not None and int(length_str) > max_bytes:
+            raise ValueError(
+                f"GTFS zip Content-Length {length_str} exceeds limit {max_bytes}"
+            )
+        chunks = []
+        received = 0
+        for chunk in r.iter_bytes():
+            received += len(chunk)
+            if received > max_bytes:
                 raise ValueError(
-                    f"GTFS zip Content-Length {length_str} exceeds limit {max_bytes}"
+                    f"GTFS zip body exceeded limit {max_bytes} during download"
                 )
-            chunks = []
-            received = 0
-            for chunk in r.iter_bytes():
-                received += len(chunk)
-                if received > max_bytes:
-                    raise ValueError(
-                        f"GTFS zip body exceeded limit {max_bytes} during download"
-                    )
-                chunks.append(chunk)
-            return b"".join(chunks)
+            chunks.append(chunk)
+        return b"".join(chunks)
 
 
 def read_gtfs_object(key: str, max_bytes: int) -> bytes:
@@ -119,9 +119,7 @@ def _parse_trips(rows: Iterable[Row], gtfs_static_feed_id: int) -> Iterator[Row]
         }
 
 
-def _parse_stop_times(
-    rows: Iterable[Row], gtfs_static_feed_id: int
-) -> Iterator[Row]:
+def _parse_stop_times(rows: Iterable[Row], gtfs_static_feed_id: int) -> Iterator[Row]:
     for r in rows:
         arr = r.get("arrival_time", "").strip()
         dep = r.get("departure_time", "").strip()
