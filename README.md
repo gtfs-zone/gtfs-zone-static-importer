@@ -1,7 +1,7 @@
-# schedule-foamer
+# gtfs-zone-static-importer
 
 Celery worker that downloads GTFS static feeds, parses them, and writes to PostgreSQL tables
-defined in [railroad-club](https://github.com/gtfs-zone/railroad-club).
+defined in [gtfs-zone-db-models](https://github.com/gtfs-zone/gtfs-zone-db-models).
 
 ## Quick start
 
@@ -10,8 +10,8 @@ cp .env.example .env
 # Edit .env with your DATABASE_URL and Redis URLs
 uv sync
 uv run pre-commit install   # install git hooks (required once per clone)
-uv run celery -A schedule_foamer.celery_app worker -l info
-uv run celery -A schedule_foamer.celery_app beat -l info   # periodic scheduling, separate process
+uv run celery -A gtfs_zone_static_importer.celery_app worker -l info
+uv run celery -A gtfs_zone_static_importer.celery_app beat -l info   # periodic scheduling, separate process
 ```
 
 ## Development commands
@@ -26,10 +26,10 @@ uv run ruff check --fix src/    # lint + autofix
 
 ## Docker
 
-Built and run as part of [music-student](https://github.com/gtfs-zone/music-student)'s docker-compose:
+Built and run as part of [dev-stack](https://github.com/gtfs-zone/gtfs-zone-dev-stack)'s docker-compose:
 
 ```bash
-cd ../music-student
+cd ../gtfs-zone-dev-stack
 docker compose up --build
 ```
 
@@ -37,5 +37,5 @@ docker compose up --build
 
 | Task | Description |
 |------|-------------|
-| `schedule_foamer.tasks.load_feed` | Download and parse a single GTFS feed by ID |
-| `schedule_foamer.tasks.ensure_all_feeds_scheduled` | Enqueue `load_feed` for feeds never loaded, failed, stuck, or (url feeds only) last loaded over 24h ago (runs every minute) |
+| `gtfs_zone_static_importer.tasks.load_feed` | Download and parse a single GTFS feed by ID |
+| `gtfs_zone_static_importer.tasks.ensure_all_feeds_scheduled` | Enqueue `load_feed` for feeds never loaded, failed, stuck, or (url feeds only) last loaded over 24h ago (runs every minute) |

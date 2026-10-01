@@ -5,20 +5,20 @@ from datetime import UTC, datetime, timedelta
 from celery import Task
 from celery.utils.log import get_task_logger
 from celery_singleton import Singleton
-from railroad_club.models import Feed, GtfsStaticFeed, LoadStatus
-from railroad_club.models.gtfs_upload import FeedSourceKind
-from railroad_club.object_store import ObjectNotFound
+from gtfs_zone_db_models.models import Feed, GtfsStaticFeed, LoadStatus
+from gtfs_zone_db_models.models.gtfs_upload import FeedSourceKind
+from gtfs_zone_db_models.object_store import ObjectNotFound
 from sqlalchemy import select, update
 
-from schedule_foamer.celery_app import celery_app
-from schedule_foamer.database import get_session
-from schedule_foamer.events import publish_load
-from schedule_foamer.gtfs_loader import (
+from gtfs_zone_static_importer.celery_app import celery_app
+from gtfs_zone_static_importer.database import get_session
+from gtfs_zone_static_importer.events import publish_load
+from gtfs_zone_static_importer.gtfs_loader import (
     download_gtfs_zip,
     load_feed_data,
     read_gtfs_object,
 )
-from schedule_foamer.settings import settings
+from gtfs_zone_static_importer.settings import settings
 
 log = get_task_logger(__name__)
 
@@ -45,7 +45,7 @@ def _fail_load(
 
 @celery_app.task(
     bind=True,
-    name="schedule_foamer.tasks.load_feed",
+    name="gtfs_zone_static_importer.tasks.load_feed",
     base=Singleton,
     max_retries=3,
     raise_on_duplicate=False,
@@ -97,7 +97,7 @@ def load_feed(self: Task, feed_id: int) -> dict:
         publish_load(feed_id, session.get(GtfsStaticFeed, gsf_id))
 
     # 2. Get the zip bytes (outside session). Hosted feeds read the object
-    # schedule-foamer's uploader wrote; url feeds download as they always have.
+    # static-importer's uploader wrote; url feeds download as they always have.
     if hosted and object_key is None:
         _fail_load(
             feed_id, gsf_id, "Hosted feed has no uploaded schedule", permanent=True
@@ -150,7 +150,7 @@ def load_feed(self: Task, feed_id: int) -> dict:
         raise self.retry(exc=exc, countdown=60 + random.uniform(0, 30)) from exc
 
 
-@celery_app.task(name="schedule_foamer.tasks.ensure_all_feeds_scheduled")
+@celery_app.task(name="gtfs_zone_static_importer.tasks.ensure_all_feeds_scheduled")
 def ensure_all_feeds_scheduled() -> int:
     """Re-enqueue feeds unloaded, failed, or last loaded over 24h ago.
 

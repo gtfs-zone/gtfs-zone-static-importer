@@ -1,7 +1,7 @@
-# schedule-foamer
+# gtfs-zone-static-importer
 
 Celery worker that downloads GTFS static feeds and writes parsed data to PostgreSQL tables
-owned by `cafe-car`.
+owned by `rt-api`.
 
 ## Architecture
 
@@ -13,10 +13,10 @@ owned by `cafe-car`.
 
 ## The two source kinds
 
-A `Feed`'s `source_kind` (`railroad_club.models.gtfs_upload.FeedSourceKind`)
+A `Feed`'s `source_kind` (`gtfs_zone_db_models.models.gtfs_upload.FeedSourceKind`)
 is `hosted` or `url`. `tasks.py` branches on `feed.is_hosted`: a hosted feed's
 bytes come from `read_gtfs_object` against object storage (Garage), the zip
-someone uploaded through cafe-car; a `url` feed is downloaded fresh with
+someone uploaded through rt-api; a `url` feed is downloaded fresh with
 `download_gtfs_zip` on every refresh, as it always has been. Hosted feeds are
 never re-downloaded from `Feed.static_feed_url`.
 
@@ -28,7 +28,7 @@ never re-downloaded from `Feed.static_feed_url`.
 
 - Never store `GtfsStopTime` with null `arrival_time` or `departure_time`; filter rows during parse
 - `arrival_time` and `departure_time` are stored as TEXT (GTFS allows values like `25:30:00` for overnight trips)
-- Never run Alembic here; schema migrations live in `cafe-car`
+- Never run Alembic here; schema migrations live in `rt-api`
 - Use psycopg2 (sync) only, no asyncpg
 - Module loggers are named `log`, never `logger`: `log = logging.getLogger(__name__)`
 
@@ -51,11 +51,11 @@ uv run pre-commit install
 
 ```bash
 uv sync
-uv run celery -A schedule_foamer.celery_app worker -l info
+uv run celery -A gtfs_zone_static_importer.celery_app worker -l info
 # In a separate terminal for beat:
-uv run celery -A schedule_foamer.celery_app beat -l info
+uv run celery -A gtfs_zone_static_importer.celery_app beat -l info
 ```
 
 ## Module structure
 
-The package is `schedule_foamer` (installed via hatchling from `src/schedule_foamer`).
+The package is `gtfs_zone_static_importer` (installed via hatchling from `src/gtfs_zone_static_importer`).

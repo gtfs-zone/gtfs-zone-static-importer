@@ -1,7 +1,7 @@
-"""Publishing a feed's load status to the channel yard-master listens on.
+"""Publishing a feed's load status to the channel rt-manager listens on.
 
-The channel name and the payload shape are railroad-club's, so this repo and
-cafe-car cannot drift apart on either. All that lives here is the connection
+The channel name and the payload shape are gtfs-zone-db-models's, so this repo and
+rt-api cannot drift apart on either. All that lives here is the connection
 and the rule that a publish never fails a load.
 
 That rule is the same one ``request_feed_load`` keeps on the other side: the
@@ -19,12 +19,12 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from railroad_club.feed_events import feed_channel, load_event
+from gtfs_zone_db_models.feed_events import feed_channel, load_event
 
-from schedule_foamer.settings import settings
+from gtfs_zone_static_importer.settings import settings
 
 if TYPE_CHECKING:
-    from railroad_club.models import GtfsStaticFeed
+    from gtfs_zone_db_models.models import GtfsStaticFeed
     from redis import Redis
 
 log = logging.getLogger(__name__)

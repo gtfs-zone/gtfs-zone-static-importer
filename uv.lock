@@ -499,6 +499,64 @@ wheels = [
 ]
 
 [[package]]
+name = "gtfs-zone-db-models"
+version = "0.2.0"
+source = { git = "https://github.com/gtfs-zone/gtfs-zone-db-models.git?tag=v0.2.0#043c24bab0896a846406c7ccc3d7d9a8592ba7c1" }
+dependencies = [
+    { name = "alembic" },
+    { name = "asyncpg" },
+    { name = "boto3" },
+    { name = "petname" },
+    { name = "pydantic-settings" },
+    { name = "sqlmodel" },
+]
+
+[[package]]
+name = "gtfs-zone-static-importer"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "celery", extra = ["redis"] },
+    { name = "celery-singleton" },
+    { name = "gtfs-zone-db-models" },
+    { name = "httpx" },
+    { name = "psycopg2-binary" },
+    { name = "pydantic-settings" },
+    { name = "redis" },
+    { name = "sqlmodel" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "commitizen" },
+    { name = "moto", extra = ["s3"] },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "celery", extras = ["redis"], specifier = ">=5.4" },
+    { name = "celery-singleton", specifier = ">=0.3" },
+    { name = "gtfs-zone-db-models", git = "https://github.com/gtfs-zone/gtfs-zone-db-models.git?tag=v0.2.0" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "psycopg2-binary", specifier = ">=2.9" },
+    { name = "pydantic-settings", specifier = ">=2.6" },
+    { name = "redis", specifier = ">=5" },
+    { name = "sqlmodel", specifier = ">=0.0.21" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "commitizen" },
+    { name = "moto", extras = ["s3"], specifier = ">=5.0" },
+    { name = "pre-commit" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "ruff" },
+]
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1002,19 +1060,6 @@ wheels = [
 ]
 
 [[package]]
-name = "railroad-club"
-version = "0.1.0"
-source = { git = "https://github.com/gtfs-zone/railroad-club.git#647f187940e698cf7d507c3250e39511d9d5d9b9" }
-dependencies = [
-    { name = "alembic" },
-    { name = "asyncpg" },
-    { name = "boto3" },
-    { name = "petname" },
-    { name = "pydantic-settings" },
-    { name = "sqlmodel" },
-]
-
-[[package]]
 name = "redis"
 version = "6.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1087,51 +1132,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/76/43/35e4d8aa320bffe8287fe8f65f578fa2d2db0a64212f0e710dce58267854/s3transfer-0.19.2.tar.gz", hash = "sha256:ba0309fd86be3c27dbf78cdd813c13c5e1df16e5874b99d2535ebbdfb9892993", size = 165592, upload-time = "2026-07-22T19:30:44.432Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bc/e7/5c595c75e9f41a44f30e526eda465ea0b4eec93470e074e4a111b253f13a/s3transfer-0.19.2-py3-none-any.whl", hash = "sha256:d8168eccca828cbb2cd573675333f3bddd254313a9c42494b84c76b539e8ba25", size = 90216, upload-time = "2026-07-22T19:30:43.251Z" },
-]
-
-[[package]]
-name = "schedule-foamer"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "celery", extra = ["redis"] },
-    { name = "celery-singleton" },
-    { name = "httpx" },
-    { name = "psycopg2-binary" },
-    { name = "pydantic-settings" },
-    { name = "railroad-club" },
-    { name = "redis" },
-    { name = "sqlmodel" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "commitizen" },
-    { name = "moto", extra = ["s3"] },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "celery", extras = ["redis"], specifier = ">=5.4" },
-    { name = "celery-singleton", specifier = ">=0.3" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "psycopg2-binary", specifier = ">=2.9" },
-    { name = "pydantic-settings", specifier = ">=2.6" },
-    { name = "railroad-club", git = "https://github.com/gtfs-zone/railroad-club.git" },
-    { name = "redis", specifier = ">=5" },
-    { name = "sqlmodel", specifier = ">=0.0.21" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "commitizen" },
-    { name = "moto", extras = ["s3"], specifier = ">=5.0" },
-    { name = "pre-commit" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "ruff" },
 ]
 
 [[package]]

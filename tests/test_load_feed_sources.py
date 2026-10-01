@@ -5,17 +5,17 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from railroad_club.models import Feed, GtfsRoute, GtfsStaticFeed, LoadStatus, User
-from railroad_club.models.gtfs_upload import (
+from gtfs_zone_db_models.models import Feed, GtfsRoute, GtfsStaticFeed, LoadStatus, User
+from gtfs_zone_db_models.models.gtfs_upload import (
     FeedSourceKind,
     GtfsUpload,
     object_key_for,
 )
-from railroad_club.object_store import ObjectNotFound
+from gtfs_zone_db_models.object_store import ObjectNotFound
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from schedule_foamer import tasks
+from gtfs_zone_static_importer import tasks
 from tests.conftest import make_gtfs_zip
 
 

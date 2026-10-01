@@ -1,7 +1,7 @@
 """Test database and a fake object store.
 
 SQLite in memory and moto, so the suite needs no running service. Migrations
-are not covered here; they live in railroad-club and are round-tripped against
+are not covered here; they live in gtfs-zone-db-models and are round-tripped against
 the dev database by hand.
 """
 
@@ -12,10 +12,10 @@ import io
 import zipfile
 
 import boto3
+import gtfs_zone_db_models.models  # noqa: F401 - registers every table on the metadata
 import pytest
-import railroad_club.models  # noqa: F401 - registers every table on the metadata
+from gtfs_zone_db_models.object_store import ObjectStore, ObjectStoreSettings
 from moto import mock_aws
-from railroad_club.object_store import ObjectStore, ObjectStoreSettings
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
@@ -51,7 +51,7 @@ def engine():
 def session_factory(engine, monkeypatch):
     """`get_session` as the tasks see it, bound to the test database.
 
-    Patched on `schedule_foamer.tasks` rather than on `database`, because the
+    Patched on `gtfs_zone_static_importer.tasks` rather than on `database`, because the
     task module imported the name at import time.
     """
 
@@ -60,7 +60,7 @@ def session_factory(engine, monkeypatch):
         with Session(engine) as session:
             yield session
 
-    monkeypatch.setattr("schedule_foamer.tasks.get_session", get_session)
+    monkeypatch.setattr("gtfs_zone_static_importer.tasks.get_session", get_session)
     return get_session
 
 
@@ -81,7 +81,7 @@ def store(monkeypatch):
         # `get_object_store` is lru_cached and reads the process environment;
         # handing the fake back directly keeps the cache out of the test.
         monkeypatch.setattr(
-            "schedule_foamer.gtfs_loader.get_object_store", lambda: store
+            "gtfs_zone_static_importer.gtfs_loader.get_object_store", lambda: store
         )
         yield store
 

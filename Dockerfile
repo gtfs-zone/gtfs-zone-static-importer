@@ -38,5 +38,5 @@ RUN mkdir -p /app/beat && chown bridge:bridge /app/beat
 USER bridge
 
 
-CMD ["celery", "-A", "schedule_foamer.celery_app", "worker"]
+CMD ["celery", "-A", "gtfs_zone_static_importer.celery_app", "worker"]
 

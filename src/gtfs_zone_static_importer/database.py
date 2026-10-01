@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
-from schedule_foamer.settings import settings
+from gtfs_zone_static_importer.settings import settings
 
 _engine: Engine | None = None
 

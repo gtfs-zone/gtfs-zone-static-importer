@@ -5,8 +5,8 @@ from collections.abc import Iterable, Iterator
 from typing import Any
 
 import httpx
-from railroad_club.models import GtfsRoute, GtfsStop, GtfsStopTime, GtfsTrip
-from railroad_club.object_store import get_object_store
+from gtfs_zone_db_models.models import GtfsRoute, GtfsStop, GtfsStopTime, GtfsTrip
+from gtfs_zone_db_models.object_store import get_object_store
 from sqlalchemy import delete, insert
 from sqlalchemy.orm import Session
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from railroad_club.object_store import ObjectNotFound
+from gtfs_zone_db_models.object_store import ObjectNotFound
 
-from schedule_foamer.gtfs_loader import read_gtfs_object
+from gtfs_zone_static_importer.gtfs_loader import read_gtfs_object
 
 KEY = "feeds/1/abc.zip"
 
