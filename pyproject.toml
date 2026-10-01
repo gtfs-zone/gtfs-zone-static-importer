@@ -3,6 +3,7 @@ name = "gtfs-zone-static-importer"
 version = "0.2.0"
 requires-python = ">=3.13"
 description = "Celery worker that builds and publishes GTFS-RT schedule updates"
+license = "AGPL-3.0-or-later"
 dependencies = [
     "celery[redis]>=5.4",
     "celery-singleton>=0.3",
