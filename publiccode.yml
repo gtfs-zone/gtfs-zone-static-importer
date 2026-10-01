@@ -1,0 +1,43 @@
+publiccodeYmlVersion: "0.4"
+
+name: GTFS.zone Static Importer
+url: "https://github.com/gtfs-zone/gtfs-zone-static-importer"
+
+platforms:
+  - linux
+
+categories:
+  - data-collection
+
+developmentStatus: beta
+
+softwareType: "standalone/backend"
+
+description:
+  en:
+    shortDescription: >
+      A Celery worker that downloads GTFS Schedule feeds and loads them into PostgreSQL.
+    longDescription: >
+      GTFS.zone Static Importer is a Celery worker and beat scheduler that
+      downloads GTFS Schedule feeds, parses them, and writes them to the
+      PostgreSQL tables defined in gtfs-zone-db-models. The realtime services
+      read those tables to match vehicles to scheduled trips. Feeds are
+      refetched on a schedule.
+    features:
+      - Scheduled downloads of GTFS Schedule feeds
+      - Parsing and loading into PostgreSQL
+      - Celery worker and beat scheduler
+
+legal:
+  license: AGPL-3.0-or-later
+
+maintenance:
+  type: community
+  contacts:
+    - name: Max Katz-Christy
+      email: maxkatzchristy@gmail.com
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
