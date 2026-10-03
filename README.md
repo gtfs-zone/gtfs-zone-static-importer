@@ -1,5 +1,7 @@
 # gtfs-zone-static-importer
 
+[![CI](https://img.shields.io/github/actions/workflow/status/gtfs-zone/gtfs-zone-static-importer/check.yml?branch=main&label=CI)](https://github.com/gtfs-zone/gtfs-zone-static-importer/actions/workflows/check.yml?query=branch%3Amain) [![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](LICENSE.txt) [![Container image](https://img.shields.io/badge/image-ghcr.io-blue?logo=docker&logoColor=white)](https://github.com/gtfs-zone/gtfs-zone-static-importer/pkgs/container/gtfs-zone-static-importer)
+
 Celery worker that downloads GTFS static feeds, parses them, and writes to PostgreSQL tables
 defined in [gtfs-zone-db-models](https://github.com/gtfs-zone/gtfs-zone-db-models).
 
