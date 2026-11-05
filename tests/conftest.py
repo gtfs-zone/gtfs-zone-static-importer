@@ -1,8 +1,8 @@
 """Test database and a fake object store.
 
-SQLite in memory and moto, so the suite needs no running service. Migrations
-are not covered here; they live in gtfs-zone-db-models and are round-tripped against
-the dev database by hand.
+SQLite in memory and obstore's MemoryStore, so the suite needs no running
+service. Migrations are not covered here; they live in gtfs-zone-db-models and
+are round-tripped against the dev database by hand.
 """
 
 from __future__ import annotations
@@ -11,20 +11,16 @@ import contextlib
 import io
 import zipfile
 
-import boto3
 import gtfs_zone_db_models.models  # noqa: F401 - registers every table on the metadata
 import pytest
 from gtfs_zone_db_models.object_store import ObjectStore, ObjectStoreSettings
-from moto import mock_aws
+from obstore.store import MemoryStore
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
 BUCKET = "test-feeds"
-# Not an AWS hostname on purpose: the store points at Garage, and moto only
-# intercepts a custom endpoint when told which one.
-ENDPOINT = "http://s3.local"
 
 
 @pytest.fixture
@@ -66,24 +62,13 @@ def session_factory(engine, monkeypatch):
 
 @pytest.fixture
 def store(monkeypatch):
-    monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", ENDPOINT)
-    with mock_aws():
-        boto3.client("s3", region_name="us-east-1").create_bucket(Bucket=BUCKET)
-        store = ObjectStore(
-            ObjectStoreSettings(
-                s3_endpoint=ENDPOINT,
-                s3_bucket=BUCKET,
-                s3_access_key="key",
-                s3_secret_key="secret",
-                s3_region="us-east-1",
-            )
-        )
-        # `get_object_store` is lru_cached and reads the process environment;
-        # handing the fake back directly keeps the cache out of the test.
-        monkeypatch.setattr(
-            "gtfs_zone_static_importer.gtfs_loader.get_object_store", lambda: store
-        )
-        yield store
+    store = ObjectStore(ObjectStoreSettings(s3_bucket=BUCKET), store=MemoryStore())
+    # `get_object_store` is lru_cached and reads the process environment;
+    # handing the fake back directly keeps the cache out of the test.
+    monkeypatch.setattr(
+        "gtfs_zone_static_importer.gtfs_loader.get_object_store", lambda: store
+    )
+    return store
 
 
 def make_gtfs_zip(*, route_id: str = "R1") -> bytes:
