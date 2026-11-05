@@ -1,3 +1,10 @@
+## v0.2.3 (2026-11-05)
+
+### Fix
+
+- **deps**: db-models v0.3.0, its object store over obstore instead of boto3
+- **deps**: upgrade packages with published security advisories
+
 ## v0.2.2 (2026-10-02)
 
 ### Fix
